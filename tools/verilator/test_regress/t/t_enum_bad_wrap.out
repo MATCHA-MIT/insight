@@ -1,0 +1,6 @@
+%Error: t/t_enum_bad_wrap.v:11:19: Enum value illegally wrapped around (IEEE 1800-2023 6.19)
+                                 : ... note: In instance 't'
+   11 |                   WRAPPED
+      |                   ^~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

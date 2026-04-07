@@ -1,0 +1,11 @@
+%Error: t/t_lint_vcmarker_bad.v:9:1: Version control conflict marker in file
+    9 | <<<<<<< HEAD   
+      | ^~~~~~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_lint_vcmarker_bad.v:11:1: Version control conflict marker in file
+   11 | =======    
+      | ^~~~~~~~~~~
+%Error: t/t_lint_vcmarker_bad.v:13:1: Version control conflict marker in file
+   13 | >>>>>>> MERGE   
+      | ^~~~~~~~~~~~~~~~
+%Error: Exiting due to

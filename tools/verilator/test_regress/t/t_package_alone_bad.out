@@ -1,0 +1,5 @@
+%Error: t/t_package_alone_bad.v:7:13: Export package not found: 'pkg'
+    7 | export pkg::something;
+      |             ^~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

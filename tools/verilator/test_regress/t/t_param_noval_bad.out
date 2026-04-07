@@ -1,0 +1,33 @@
+%Error: t/t_param_noval_bad.v:7:22: Parameter without default value is never given value (IEEE 1800-2023 6.20.1): 'P'
+                                  : ... note: In instance 't'
+    7 | module t #(parameter P, parameter type T);
+      |                      ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_param_noval_bad.v:7:40: Parameter type without default value is never given value (IEEE 1800-2023 6.20.1): 'T'
+                                  : ... note: In instance 't'
+    7 | module t #(parameter P, parameter type T);
+      |                                        ^
+%Warning-WIDTHTRUNC: t/t_param_noval_bad.v:10:7: Logical operator GENFOR expects 1 bit on the For Test Condition, but For Test Condition's VARREF 'P' generates 32 bits.
+                                               : ... note: In instance 't'
+   10 |       for (j=0; P; j++)
+      |       ^~~
+                     ... For warning description see https://verilator.org/warn/WIDTHTRUNC?v=latest
+                     ... Use "/* verilator lint_off WIDTHTRUNC */" and lint_on around source to disable this message.
+%Error: t/t_param_noval_bad.v:10:7: Non-genvar used in generate for: 'j'
+                                  : ... note: In instance 't'
+   10 |       for (j=0; P; j++)
+      |       ^~~
+%Error: t/t_param_noval_bad.v:10:7: Loop unrolling failed.
+                                  : ... note: In instance 't'
+   10 |       for (j=0; P; j++)
+      |       ^~~
+%Error-UNSUPPORTED: t/t_param_noval_bad.v:10:7: Unsupported: Can't unroll generate for; Unable to unroll loop
+                                              : ... note: In instance 't'
+   10 |       for (j=0; P; j++)
+      |       ^~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: t/t_param_noval_bad.v:10:7: For loop doesn't have genvar index, or is malformed
+                                  : ... note: In instance 't'
+   10 |       for (j=0; P; j++)
+      |       ^~~
+%Error: Exiting due to

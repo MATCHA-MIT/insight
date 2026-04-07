@@ -1,0 +1,104 @@
+{
+    "cex_and_bex_sets": "ouput_sets.json",
+    "sodor_offset": 0,
+    "memory_format_string_ref": "correctness.sodor_core.memory.mem_ext.Memory[{idx}][63:0]",
+    "memory_format_string_dut": "correctness.boom.dut.TileLink_Memory.mem[{idx}][63:0]",
+    "memory_size": 64,
+    "start_address": "0x10000",
+    "first_symbolic_instruction_idx": 0,
+    "regex_stages": [
+        {
+            "ref_only": {
+                "include": [
+                    ".*sodor.*",
+                    ".*correctness.commit_counter_sodor.*"
+                ],
+                "exclude": [
+                    "TOP.correctness.sodor.*commit_valid",
+                    ".*.clk",
+                    ".*.clock",
+                    ".*.reset",
+                    ".*.rst",
+		    ".*.csr.*_decoded_addr_decoded_decoded_andMatrixOutputs_.*",
+		    ".*.csr._GEN_0",
+		    ".*my_commit_target.*",
+		    ".*sodor_core.core.simulated_pipeline_buffer.writePtr.*",
+		    ".*sodor_core.core.simulated_pipeline_buffer.Added__Vcond_if_sodor_verilog_Sodor_PipelineBuffer_sv.*",
+		    ".*sodor_core.core.simulated_pipeline_buffer.Added__Vcond_tern_sodor_verilog_Sodor_Pipeline.*",
+		    ".*correctness.sodor_core.core.simulated_pipeline_buffer.buffer_2.*",
+		    ".*sodor_core.core.simulated_pipeline_buffer._elementCount_.*",
+		    ".*sodor_core.core.instruction_history_buffer.Added__Vcond_if_sodor_verilog_Sodor_CircularBufferNoReadOut.*",
+                    ".*sodor_core.core.simulated_pipeline_buffer.writePtr.*",
+                    ".*sodor_core.core.simulated_pipeline_buffer.Added__Vcond_if_sodor_verilog_Sodor_PipelineBuffer_sv.*",
+                    ".*sodor_core.core.simulated_pipeline_buffer.Added__Vcond_tern_sodor_verilog_Sodor_Pipeline.*",
+                    ".*correctness.sodor_core.core.simulated_pipeline_buffer.buffer_2.*",
+                    ".*sodor_core.core.simulated_pipeline_buffer._elementCount_.*",
+                    ".*sodor_core.core.d.csr.reg_mtval.*",
+                    ".*sodor_core.core.simulated_pipeline_buffer.Added__Vcond_tern_sodor_verilog.*",
+		    ".*sodor_core.core.instruction_history_buffer.*",
+		    ".*sodor_core.core.simulated_pipeline_buffer.*",
+		    ".*sodor_core.core.d.csr.reg_mepc.*",
+		    ".*sodor_core.core.d.csr.reg_.*",
+		    ".*.sodor_core.core.d.csr._read_mtvec_T_5.*",
+		    ". sodor_core.core.d.csr._decoded_addr_decoded_decoded_andMatrixOutputs_T_37.*",
+		    ".*sodor_core.core.d.csr._GEN_0.*",
+		    ".*decoded_addr_decoded_decoded_andMatrixOutputs_.*"
+
+                ]
+            }
+        },
+        {
+            "boom": {
+                "include": [
+                    ".*boom.dut.BoomTile.core.alu_exe_unit.ALUUnit.*",
+                    ".*boom.dut.BoomTile.core.decode_units_0.*",
+                    ".*boom.dut.BoomTile.core.dec_brmask_logic.*",
+                    ".*boom.dut.BoomTile.core.rename_stage.*",
+                    ".*boom.dut.BoomTile.core.int_issue_unit.*",
+                    ".*boom.dut.BoomTile.core.dispatcher.*",
+                    ".*boom.dut.BoomTile.core.iregfile.*",
+                    ".*boom.dut.BoomTile.core.iregister_read.*",
+                    ".*boom.dut.BoomTile.core.rob.*",
+                    ".*boom.dut.BoomTile.core.csr.*",
+                    ".*correctness.commit_counter_boom",
+                    ".*boom.dut.BoomTile.lsu.*"
+                ],
+                "exclude": [
+                    ".*boom.dut.BoomTile.dcache.amoalu.*",
+		    ".*correctness.boom.dut.BoomTile.lsu.dtlb.*",
+                    ".*boom.dut.BoomTile.core.memExeUnit.*",
+		    ".*boom.dut.BoomTile.core.csr.*_decoded_addr_decoded_decoded_andMatrixOutputs_.*",
+		    ".*boom.dut.BoomTile.core.csr.*decoded_addr_decoded_decoded_invInputs.*",
+		    ".*decoder_decoded_andMatrixOutputs.*",
+                    ".*boom.dut.BoomTile.core.memExeUnit.*",
+		    ".*boom.dut.BoomTile._core_io_ptw.*",
+                    ".*boom.dut.BoomTile.core.mem_issue_unit.*",
+                    ".*boom.dut.BoomTile.core.alu_exe_unit.PipelinedMulUnit.*",
+                        ".*boom.dut.BoomTile.frontend.*",
+                        ".*boom.dut.BoomTile.dcache.metaWriteArb.*",
+                    ".*boom.dut.BoomTile.dcache.metaReadArb.*",
+                    ".*boom.dut.BoomTile.dcache.dataWriteArb.*",
+                    ".*boom.dut.BoomTile.dcache.dataReadArb.*",
+                    ".*boom.dut.BoomTile.dcache.wbArb.*",
+                    ".*boom.dut.BoomTile.dcache.lsu_release_arb.*",
+                    ".*boom.dut.BoomTile.core.alu_exe_unit.IntToFPUnit.*",
+                    ".*boom.dut.BoomTile.core.alu_exe_unit.queue.*",
+                    ".*boom.dut.BoomTile.core.FpPipeline.*",
+                    ".*\\._\\d+_.*",
+                    ".*.clk",
+                    ".*.clock",
+                    ".*.reset",
+                    ".*.rst",
+                    ".*boom.dut.BoomTile.tlMasterXbar.*",
+                    ".*boom.dut.BoomTile.intXbar.*",
+                    ".*boom.dut.BoomTile.hellaCacheArb.*",
+                    ".*boom.dut.BoomTile.core.FpPipeline.*",
+                    ".*boom.dut.BoomTile.core.fp_rename_stage.*",
+                    ".*boom.dut.BoomTile.core.wbarb.*",
+                    ".*boom.dut.BoomTile.core.ftq_arb.*",
+		    ".*boom.*my_commit_target.*"
+                ]
+            }
+        }
+    ]
+}

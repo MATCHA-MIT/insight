@@ -1,0 +1,31 @@
+# Rust build artifacts
+/target/
+**/*.rs.bk
+*.pdb
+
+# Cargo lock file (uncomment if this is a library)
+# Cargo.lock
+
+# Generated files from examples
+/examples/output/
+/examples/*.bin
+
+# Test artifacts
+/tests/output/
+*.profraw
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Output directories
+/output/
+/mutated_sequences/
+
+# Temporary files
+*.tmp
+*.temp

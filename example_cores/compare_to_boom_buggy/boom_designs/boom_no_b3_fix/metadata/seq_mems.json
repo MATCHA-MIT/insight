@@ -1,0 +1,112 @@
+[
+  {
+    "module_name": "tag_array_ext",
+    "depth": 2,
+    "width": 54,
+    "masked": true,
+    "read": 0,
+    "write": 0,
+    "readwrite": 1,
+    "mask_granularity": 27,
+    "extra_ports": [],
+    "hierarchy": [
+      "ChipTop.system.tile_prci_domain.element_reset_domain_boom_tile.dcache.meta_0.tag_array.tag_array_ext"
+    ]
+  },
+  {
+    "module_name": "array_0_0_0_ext",
+    "depth": 16,
+    "width": 64,
+    "masked": false,
+    "read": 1,
+    "write": 1,
+    "readwrite": 0,
+    "extra_ports": [],
+    "hierarchy": [
+      "ChipTop.system.tile_prci_domain.element_reset_domain_boom_tile.dcache.data.array_1_0_0.array_0_0_0_ext",
+      "ChipTop.system.tile_prci_domain.element_reset_domain_boom_tile.dcache.data.array_0_0_0.array_0_0_0_ext"
+    ]
+  },
+  {
+    "module_name": "tag_array_0_ext",
+    "depth": 2,
+    "width": 50,
+    "masked": true,
+    "read": 0,
+    "write": 0,
+    "readwrite": 1,
+    "mask_granularity": 25,
+    "extra_ports": [],
+    "hierarchy": [
+      "ChipTop.system.tile_prci_domain.element_reset_domain_boom_tile.frontend.icache.tag_array.tag_array_0_ext"
+    ]
+  },
+  {
+    "module_name": "dataArrayWay_0_ext",
+    "depth": 16,
+    "width": 64,
+    "masked": false,
+    "read": 0,
+    "write": 0,
+    "readwrite": 1,
+    "extra_ports": [],
+    "hierarchy": [
+      "ChipTop.system.tile_prci_domain.element_reset_domain_boom_tile.frontend.icache.dataArrayWay_1.dataArrayWay_0_ext",
+      "ChipTop.system.tile_prci_domain.element_reset_domain_boom_tile.frontend.icache.dataArrayWay_0.dataArrayWay_0_ext"
+    ]
+  },
+  {
+    "module_name": "meta_0_ext",
+    "depth": 16,
+    "width": 120,
+    "masked": false,
+    "read": 1,
+    "write": 1,
+    "readwrite": 0,
+    "extra_ports": [],
+    "hierarchy": [
+      "ChipTop.system.tile_prci_domain.element_reset_domain_boom_tile.frontend.ftq.meta_0.meta_0_ext"
+    ]
+  },
+  {
+    "module_name": "ghist_0_ext",
+    "depth": 16,
+    "width": 72,
+    "masked": false,
+    "read": 1,
+    "write": 1,
+    "readwrite": 0,
+    "extra_ports": [],
+    "hierarchy": [
+      "ChipTop.system.tile_prci_domain.element_reset_domain_boom_tile.frontend.ftq.ghist_1.ghist_0_ext",
+      "ChipTop.system.tile_prci_domain.element_reset_domain_boom_tile.frontend.ftq.ghist_0.ghist_0_ext"
+    ]
+  },
+  {
+    "module_name": "rob_debug_inst_mem_0_ext",
+    "depth": 2,
+    "width": 32,
+    "masked": false,
+    "read": 1,
+    "write": 1,
+    "readwrite": 0,
+    "extra_ports": [],
+    "hierarchy": [
+      "ChipTop.system.tile_prci_domain.element_reset_domain_boom_tile.core.rob.rob_debug_inst_mem_0.rob_debug_inst_mem_0_ext"
+    ]
+  },
+  {
+    "module_name": "mem_ext",
+    "depth": 8192,
+    "width": 64,
+    "masked": true,
+    "read": 0,
+    "write": 0,
+    "readwrite": 1,
+    "mask_granularity": 8,
+    "extra_ports": [],
+    "hierarchy": [
+      "ChipTop.system.bank.ram.mem.mem_ext"
+    ]
+  }
+]

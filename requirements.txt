@@ -1,0 +1,9 @@
+cffi
+capstone
+tqdm
+maturin
+pandas
+matplotlib
+pyyaml
+vcdvcd
+Levenshtein

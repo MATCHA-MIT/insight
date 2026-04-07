@@ -1,0 +1,29 @@
+[package]
+name = "riscv_mutator"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "riscv_mutator"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+rand = "0.8"
+rayon = "1.8"
+anyhow = "1.0"
+clap = { version = "4.4", features = ["derive"] }
+byteorder = "1.5"
+num_cpus = "1.16"
+pyo3 = { version = "0.20", features = ["extension-module"] }
+indicatif = {version = "*", features = ["rayon"] }
+
+[dev-dependencies]
+tempfile = "3.8"
+
+[[example]]
+name = "generate_sample"
+path = "examples/generate_sample.rs"
+
+[[example]]
+name = "basic_usage"
+path = "examples/basic_usage.rs"
