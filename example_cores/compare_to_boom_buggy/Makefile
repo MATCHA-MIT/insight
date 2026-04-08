@@ -45,10 +45,10 @@ VERILATOR_OPTS += -trace-conditions
 endif
 
 ifeq ($(USE_STANDARD_VERILATOR),)
-VERILATOR_PATH=$(realpath ../../../tools/verilator/bin/verilator)
-VERILATOR_ALREADY_BUILT=$(wildcard ../../../tools/verilator/build_done)
+VERILATOR_PATH=$(realpath ../../tools/verilator/bin/verilator)
+VERILATOR_ALREADY_BUILT=$(wildcard ../../tools/verilator/build_done)
 ifeq ($(VERILATOR_ALREADY_BUILT),)
-$(error Verilator not built. Please run cd ../../../tools/verilator/ && ./build.sh)
+$(error Verilator not built. Please run cd ../../tools/verilator/ && ./build.sh)
 endif
 else
 VERILATOR_PATH=verilator

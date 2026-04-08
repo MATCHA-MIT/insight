@@ -45,10 +45,10 @@ VERILATOR_OPTS += -trace-conditions
 endif
 
 ifeq ($(USE_STANDARD_VERILATOR),)
-VERILATOR_PATH=$(realpath ../../../tools/verilator/bin/verilator)
-VERILATOR_ALREADY_BUILT=$(wildcard ../../../tools/verilator/build_done)
+VERILATOR_PATH=$(realpath ../../tools/verilator/bin/verilator)
+VERILATOR_ALREADY_BUILT=$(wildcard ../../tools/verilator/build_done)
 ifeq ($(VERILATOR_ALREADY_BUILT),)
-$(error Verilator not built. Please run cd ../../../tools/verilator/ && ./build.sh)
+$(error Verilator not built. Please run cd ../../tools/verilator/ && ./build.sh)
 endif
 else
 VERILATOR_PATH=verilator
@@ -122,6 +122,7 @@ get_verilog = $(if $(filter $(BUILD_NORMAL_DIR),$1),$(BUILD_NORMAL_VERILOG),$(if
 	# Also drop TestHarness.sv (we build with --top-module correctness).
 	# Provide a local stub for SimDRAM so elaboration succeeds without DPI.
 	grep -v -E '(SimDRAM\\.v|TestHarness\\.sv)' $(call get_verilog,$*)/filelist.f > $(call get_verilog,$*)/filelist.filtered.f
+	sed -i 's|^|$(call get_verilog,$*)/|' $(call get_verilog,$*)/filelist.filtered.f
 	$(VERILATOR_PATH) $(VERILATOR_OPTS) \
 		-y ../common/testbench -y rtl -y $(call get_verilog,$*) \
 		-f $(call get_verilog,$*)/filelist.filtered.f \

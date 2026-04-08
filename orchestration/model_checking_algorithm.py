@@ -228,8 +228,8 @@ def cleanup(logfile=None):
     subprocess.run(["rm ./feature_importance.csv"], stdout=logfile, stderr=logfile, shell=True)
     subprocess.run(["rm ./output_ibex.txt"], stdout=logfile, stderr=logfile, shell=True)
     subprocess.run(["rm ./output_sets.json"], stdout=logfile, stderr=logfile, shell=True)
-    os.makedirs(constants.JG_FOUND_CEXS, exist_ok=True)
-    os.makedirs(constants.JG_FOUND_BENIGN, exist_ok=True)
+    #os.makedirs(constants.JG_FOUND_CEXS, exist_ok=True)
+    #os.makedirs(constants.JG_FOUND_BENIGN, exist_ok=True)
     
 
 

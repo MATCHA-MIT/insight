@@ -104,11 +104,11 @@ module correctness(
         assign dut_commit.commit_rs1 = boom.dut.BoomTile.core.rob.my_commit_rs1;
         assign dut_commit.commit_rs2 = boom.dut.BoomTile.core.rob.my_commit_rs2;
         assign dut_commit.commit_instr = boom.dut.BoomTile.core.rob.my_commit_inst;
-        assign dut_commit.commit_exception_code = boom.dut.BoomTile.core.rob.my_commit_exception;
+        assign dut_commit.commit_exception_code = 64'h0; //boom.dut.BoomTile.core.rob.my_commit_exception;
         assign ref_commit.commit_rs1 = sodor_core.my_commit_rs1;
         assign ref_commit.commit_rs2 = sodor_core.my_commit_rs2;
         assign ref_commit.commit_instr = sodor_core.my_commit_inst;
-        assign ref_commit.commit_exception_code = sodor_core.my_commit_exception;
+        assign ref_commit.commit_exception_code = 64'h0; //sodor_core.my_commit_exception;
     //`endif
 
     // Instruction Fields

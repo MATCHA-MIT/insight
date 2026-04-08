@@ -60,5 +60,30 @@ python orchestration/run_dedup_and_metrics.py --config example_cores/configs/<pi
 - **Kronos** — RISC-V 32-bit core
 - **BOOM** — RISC-V 64-bit out-of-order core (64-bit memory)
 
+## Setup
+Before running the pipeline or reproducing results, ensure the environment is correctly set up:
+
+```bash
+./setup.sh
+source .venv/bin/activate
+```
+
+This installs Python dependencies, builds the RISC-V rotation mutator, and compiles the Rust formula finder.
+
+## Reproducing Results
+
+To reproduce the deduplication results and generate evaluation plots using testcases from Zenodo (make sure you have run the setup steps above):
+
+```bash
+./reproduce_deduplication_results.sh
+```
+
+This script will:
+1. Download testcases for BOOM and Kronos from Zenodo.
+2. Extract them into the `results/` directory.
+3. Build the Rust formula finder engine.
+4. Run deduplication and compute generalization metrics for both cores.
+5. Generate evaluation plots (found in `insight_output/<core>/deduplication/deduplication_*/plots`).
+
 ## Directory Conventions
 - `insight_output/` / `output/` — Pipeline output directories containing CEXs, benign examples, invariants, and logs.

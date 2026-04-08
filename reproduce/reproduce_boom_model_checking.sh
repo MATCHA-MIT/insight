@@ -14,4 +14,4 @@ mkdir -p logs
 ./orchestration/model_checking_algorithm.sh --config example_cores/configs/vincent_boom_buggy_pipeline_config.json --bex-weight 25 --predicate-cost 50 | tee logs/output_boom_buggy.txt
 
 # BOOM buggy bex weight 50 predicate cost 50
-./orchestration/model_checking_algorithm.sh --config example_cores/configs/vincent_boom_buggy_pipeline_config.json --bex-weight 50 --predicate-cost 50 | tee logs/output_boom_buggy_50_50.txt
+#./orchestration/model_checking_algorithm.sh --config example_cores/configs/vincent_boom_buggy_pipeline_config.json --bex-weight 50 --predicate-cost 50 | tee logs/output_boom_buggy_50_50.txt

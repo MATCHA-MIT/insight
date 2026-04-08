@@ -134,7 +134,7 @@ def copy_seed_invariants(seed_invariants, to_dir):
 
 
 def compile_rust_ffi_library():
-    subprocess.run(["cargo", "build", "--release"], cwd="./formal-verif/invariant_generation/invariant_finder_rust/", stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    subprocess.run(["cargo", "build", "--release"], cwd="./formula_finder/", stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     #shutil.copy("./formal-verif/invariant_generation/invariant_finder_rust/target/release/libinvariant_finder_rust.so", constants.INVARIANT_FINDER_LIBRARY_PATH)
 compile_rust_ffi_library()
 
@@ -239,7 +239,7 @@ def check_cex_false_positive(checker_path, cex):
     else:
         return (cex, "CEX")
     
-def generate_frozen_instruction_benign_example(all_cexs, output_dir):
+def generate_frozen_instruction_benign_example(all_cexs, output_dir, checker_path):
     result_list = []
     def process_cex(cex):
         freezed_instruction_bin = os.path.join(output_dir, f"freeze_instructions_{os.path.basename(cex)}.bin")
@@ -247,7 +247,7 @@ def generate_frozen_instruction_benign_example(all_cexs, output_dir):
         with open(freezed_instruction_bin, "wb") as f_out:
             with open(input_bin, "rb") as f_in:
                 f_out.write(f_in.read()[FREEZE_INSTRUCTIONS[0]*4:FREEZE_INSTRUCTIONS[-1]*4 +4])
-        ret = analyzer.check_commit_log("formal-verif/compare_cores/src/compare_to_kronos_cascade/obj_dir_kronos_no_fix/libcorrectness.so", freezed_instruction_bin, freezed_instruction_bin + ".fst")
+        ret = analyzer.check_commit_log(checker_path, freezed_instruction_bin, freezed_instruction_bin + ".fst")
         if ret.Kind != analyzer.CheckerResultKind.BENIGN:
             raise Exception(f"Could not generate frozen instruction benign example for CEX {cex}, something is wrong!")
         return (freezed_instruction_bin, freezed_instruction_bin + ".fst")
@@ -293,7 +293,7 @@ def inner_loop(all_cexs, output_dir, bex_multiplier, predicate_base_cost, benign
     # for inv, count in invariant_dict.items():q
     #     logger.info(f"Vincent Invariant {inv} covers {count} CEXs")
     bug_classes = check_all_cex_items(all_cexs, ffi_invariant_vec_ptr)
-    with open("current_bug_classes.json", "w") as fp:
+    with open(os.path.join(output_dir, "current_bug_classes.json"), "w") as fp:
         json.dump(bug_classes, fp, indent=4)
     to_remove = bug_classes.values()
     to_remove = set([item["file"] for sublist in to_remove for item in sublist])
@@ -592,7 +592,7 @@ def main():
     os.makedirs(sweep_dir_base, exist_ok=True)
     logger.info(f"Created sweep base directory at {sweep_dir_base}")
     os.makedirs(os.path.join(sweep_dir_base, "frozen_benign_examples"), exist_ok=True)
-    benign_example_list = generate_frozen_instruction_benign_example(all_cexs, os.path.join(sweep_dir_base, "frozen_benign_examples"))
+    benign_example_list = generate_frozen_instruction_benign_example(all_cexs, os.path.join(sweep_dir_base, "frozen_benign_examples"), checker_path)
     #benign_example_list = []
     # for f in os.listdir(os.path.join("seeds/must_fulfill_waveforms/")):
     #     if f.endswith(".fst"):

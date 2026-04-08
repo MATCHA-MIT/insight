@@ -53,7 +53,7 @@ ffi.cdef('char *check_cex_items_all_invariants(const char *cex_items, const char
 
 logger = logging.getLogger("main")
 
-CHECKER_FORMAT = "formal-verif/compare_cores/src/compare_to_kronos_cascade/obj_dir_kronos_no_{}_fix/libcorrectness.so"
+CHECKER_FORMAT = "example_cores/compare_to_kronos_cascade/build/no_{}_fix/libcorrectness.so"
 
 def check_cex_false_positive(args):
     checker = args["checker"]
@@ -143,7 +143,7 @@ def main():
             sys.exit(1)
         logger.info(f"Found {len(all_cexs)} cex files in {cexs_dir}")
 
-        check_cex_false_positive_args = [{"checker": "formal-verif/compare_cores/src/compare_to_kronos_cascade/obj_dir_kronos_no_fix/libcorrectness.so","cex": cex, "waveform": cex + ".vcd"} for cex in all_cexs]
+        check_cex_false_positive_args = [{"checker": "example_cores/compare_to_kronos_cascade/build/baseline/libcorrectness.so","cex": cex, "waveform": cex + ".vcd"} for cex in all_cexs]
         #it"s important to only pass "waveform" here: Otherwise, we re-generate waveforms for all other bugs, which have different signals, and then we cannot hceck the invariants anymore.
         with Pool() as pool:
             results = list(tqdm.tqdm(pool.imap(check_cex_false_positive, check_cex_false_positive_args), total=len(all_cexs), desc="False positive check"))
@@ -155,7 +155,7 @@ def main():
 
         all_cexs = [cex for cex in all_cexs if cex not in false_positives]
         
-        check_cex_unfixed_args = [{"checker": "formal-verif/compare_cores/src/compare_to_kronos_cascade/obj_dir_kronos_all_fix/libcorrectness.so","cex": cex} for cex in all_cexs]
+        check_cex_unfixed_args = [{"checker": "example_cores/compare_to_kronos_cascade/build/all_fix/libcorrectness.so","cex": cex} for cex in all_cexs]
         with Pool() as pool:
             results = list(tqdm.tqdm(pool.imap(check_cex_false_positive, check_cex_unfixed_args), total=len(all_cexs), desc="Unfixed check"))
         unfixed_cexs = set()

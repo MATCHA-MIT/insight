@@ -57,6 +57,9 @@ mpl.rcParams.update({
 
 # ------------------- Helpers -------------------
 
+OUTPUT_DIR = "result_plots"
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
 def fmt_percent(x: float) -> str:
     if pd.isna(x) or math.isinf(x):
         return "--"
@@ -102,9 +105,11 @@ def normalize_time(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def extract_weights(filename: str):
-    """Extract bex_weight and predicate_weight from filename using regex."""
-    nums = re.findall(r'\d+', filename)
+def extract_weights(path: str):
+    """Extract bex_weight and predicate_weight from file path using regex."""
+    if "no_insight" in path:
+        return None, None
+    nums = re.findall(r'\d+', path)
     if len(nums) >= 2:
         return int(nums[0]), int(nums[1])
     elif len(nums) == 1:
@@ -186,7 +191,7 @@ def latex_escape(s: str) -> str:
     return s
 
 
-def list_to_latex_cell(values, max_items=6, max_chars=80) -> str:
+def list_to_latex_cell(values, max_items=20, max_chars=200) -> str:
     """Join unique values into a LaTeX-safe cell; truncate politely if too long (one-column friendly)."""
     if not values:
         return "--"
@@ -348,9 +353,9 @@ def classify_all_triggered_cex(instr_lines: list[str]) -> str:
     if minstret_mentions >= 2:
         return "B1"
 
-    if any(re.search(r"\bwfi\b", line) for line in lower_lines):
+    if any(re.search(r"\bwfi\b", line) for line in lower_lines): # or any(re.search(r"\b\b", line) for line in lower_lines):
         return "U4"
-
+    print("Returning U? for ", instr_lines)
     return "U?"
 
 
@@ -620,7 +625,7 @@ for f, color in zip(files, color_cycle):
     df = pd.read_csv(f, sep=';')
     df = normalize_time(df)
 
-    bex_weight, predicate_weight = extract_weights(os.path.basename(f))
+    bex_weight, predicate_weight = extract_weights(f)
     label_suffix = (f"($\\lambda$={bex_weight}%, $\\mu$=0.{predicate_weight}%)"
                     if predicate_weight is not None else
                     "Baseline (BOOM)")
@@ -697,12 +702,6 @@ for f, color in zip(files, color_cycle):
         "NumIssues": num_issues_found,
     })
     print(df)
-    # --- Save issue detection times (across all runs) ---
-    if issue_records:
-        pd.DataFrame(issue_records).sort_values(["Config", "DetectedAtMin"]).to_csv("issue_detection_times.csv", index=False)
-        print("✅ Saved: issue_detection_times.csv")
-    else:
-        print("ℹ️ No issues found to save (issue_detection_times.csv not created).")
 
     # ---- Plotting: cumulative discovered issues from the new CEX classification ----
     issue_event_times = sorted(issue_time_map.values())
@@ -734,9 +733,16 @@ plt.title("Cumulative Issues Found Over Time (BOOM)", pad=10)
 plt.legend(frameon=False, ncol=1)
 plt.grid(True, linestyle=':', linewidth=0.5, alpha=0.8)
 plt.tight_layout(pad=0.5)
-plt.savefig("issues_vs_time.pdf")
+plt.savefig(os.path.join(OUTPUT_DIR, "issues_vs_time.pdf"))
 plt.close()
 print("✅ Saved: issues_vs_time.pdf")
+
+# --- Save issue detection times (across all runs) ---
+if issue_records:
+    pd.DataFrame(issue_records).sort_values(["Config", "DetectedAtMin"]).to_csv(os.path.join(OUTPUT_DIR, "issue_detection_times.csv"), index=False)
+    print("✅ Saved: issue_detection_times.csv")
+else:
+    print("ℹ️ No issues found to save (issue_detection_times.csv not created).")
 
 # --- Plot 2: jg_query_started (unchanged) ---
 plt.figure()
@@ -778,7 +784,7 @@ plt.title("Cumulative jg_query_started Events", pad=10)
 plt.legend(frameon=False, ncol=1)
 plt.grid(True, linestyle=':', linewidth=0.5, alpha=0.8)
 plt.tight_layout(pad=0.5)
-plt.savefig("jg_query_started_vs_time.pdf")
+plt.savefig(os.path.join(OUTPUT_DIR, "jg_query_started_vs_time.pdf"))
 plt.close()
 print("✅ Saved: jg_query_started_vs_time.pdf")
 
@@ -818,7 +824,7 @@ table_tex = r"""
 \end{table*}
 """.strip()
 
-with open("summary_table.tex", "w", encoding="utf-8") as fh:
+with open(os.path.join(OUTPUT_DIR, "summary_table.tex"), "w", encoding="utf-8") as fh:
     fh.write(table_tex + "\n")
 
 print("✅ Saved: summary_table.tex")

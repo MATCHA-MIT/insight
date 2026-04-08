@@ -20,5 +20,5 @@ if [[ "$1" == "--help" || "$1" == "-h" ]]; then
     exit 0
 fi
 
-python3 evaluation_scripts/compute_classes.py --cexs_dir "$CEXS_DIR" --class_file "$CLASS_FILE" --sweep_dir "$SWEEP_DIR"
-python3 evaluation_scripts/generalization_metrics_computation.py "$CLASS_FILE" "$SWEEP_DIR"
+python3 orchestration/compute_classes.py --cexs_dir "$CEXS_DIR" --class_file "$CLASS_FILE" --sweep_dir "$SWEEP_DIR"
+python3 orchestration/generalization_metrics_computation.py "$CLASS_FILE" "$SWEEP_DIR"

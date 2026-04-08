@@ -123,8 +123,8 @@ def main() -> int:
     args = parser.parse_args()
 
     repo_root = Path(__file__).resolve().parent.parent
-    dedup_script = repo_root / "scripts" / "deduplicate.py"
-    metrics_script = repo_root / "evaluation_scripts" / "compute_classes_and_metrics.sh"
+    dedup_script = repo_root / "orchestration" / "deduplicate.py"
+    metrics_script = repo_root / "orchestration" / "compute_classes_and_metrics.sh"
 
     with open(args.config, "r", encoding="utf-8") as f:
         config = json.load(f)

@@ -19,3 +19,7 @@ build/
 vincent_*.json
 tools/verilator/src/obj_opt/
 tools/verilator/src/obj_dbg/
+result_plots/
+results/
+insight_output_old/
+gurobi.log

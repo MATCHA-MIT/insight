@@ -17,7 +17,8 @@ python parse.py rv_i rv32_i rv_s rv_zicsr rv_zifencei
 
 echo "Building Rust RISC-V Mutator..."
 cd ../rust_mutator
-maturin develop --release
+./setup.sh
+#maturin develop --release
 cd ../../
 
 echo "Building Rust Formula Finder (Separator Inference)..."

@@ -24,7 +24,7 @@ logger = logging.getLogger("analyzer")
 subdir = pathlib.Path(__file__).parent / "formal-verif" / "invariant_generation" / "vincent_invariant_generator"
 sys.path.append(str(subdir))
 
-subdir = pathlib.Path(__file__).parent / "riscv_instruction_mutator_pkg" 
+subdir = pathlib.Path(__file__).parent.parent / "mutation_engine"
 sys.path.insert(0, str(subdir))
 
 from riscv_instruction_mutator import program
