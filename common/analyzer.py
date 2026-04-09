@@ -1239,12 +1239,29 @@ if __name__ == "__main__":
     configs_path = sys.argv[3]
     if not os.path.exists(configs_path):
         raise Exception(f"Configs path {configs_path} does not exist")
-    if len(sys.argv) >= 3:
+    if len(sys.argv) >= 4:
         config = json.load(open(configs_path, "r"))
         print(f"Loaded config from {configs_path}")
-        regex_config = json.load(open(configs_path, "r"))
-        first_symbolic_instruction_idx = config.get("first_symbolic_instruction_idx", 0)
-        start_address = int(config.get("start_address", "0x80000080"), 16)
+        
+        # Check for regex_config_path to get core-specific start_address and first_symbolic_instruction_idx
+        if "regex_config_path" in config:
+            core_config_path = config["regex_config_path"]
+            if os.path.exists(core_config_path):
+                regex_config = json.load(open(core_config_path, "r"))
+                print(f"Loaded regex config from {core_config_path}")
+            else:
+                # Fallback to main config if core config not found at specified path
+                regex_config = config
+        else:
+            regex_config = config
+
+        first_symbolic_instruction_idx = regex_config.get("first_symbolic_instruction_idx", 0)
+        start_address_val = regex_config.get("start_address", "0x80000080")
+        if isinstance(start_address_val, str):
+            start_address = int(start_address_val, 16)
+        else:
+            start_address = int(start_address_val)
+            
         print("config is", config)
         print("start address", hex(start_address))
     #output_path = config["output"]

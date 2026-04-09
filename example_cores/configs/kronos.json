@@ -1,0 +1,71 @@
+{
+    "cex_and_bex_sets": "ouput_sets.json",
+    "sodor_offset": 0,
+    "memory_format_string_ref": "correctness.sodor_core.memory.mem_ext.Memory[{idx}][31:0]",
+    "memory_format_string_dut": "correctness.kronos.dut.mem[{idx}][31:0]",
+    "memory_size": 32,
+    "start_address": "0x80000000",
+    "first_symbolic_instruction_idx": 0,
+    "regex_stages": [
+        {
+            "ref_only": {
+                "include": [
+                    ".*sodor.*"
+                ],
+                "exclude": [
+                    "TOP.correctness.sodor.*commit_valid",
+                    ".*.clk",
+                    ".*.clock",
+                    ".*.rst",
+                    ".*.reset",
+                    ".*.reset_n",
+                    ".*correctness.all_zero_fence_i.*",
+                    ".*correctness.all_zero_fence_d.*",
+                    ".*my_commit_target.*",
+                    ".*sodor_core.core.simulated_pipeline_buffer.writePtr.*",
+                    ".*correctness.commit_counter_sodor",
+                    ".*sodor_core.core.c.io_simulated_pipeline_buffer.*",
+                    ".*sodor_core.core.simulated_pipeline_buffer.Added__Vcond_if_sodor_verilog_Sodor_PipelineBuffer_sv.*",
+                    ".*sodor_core.core.simulated_pipeline_buffer.Added__Vcond_tern_sodor_verilog_Sodor_Pipeline.*",
+                    ".*correctness.sodor_core.core.simulated_pipeline_buffer.buffer_2.*",
+                    ".*correctness.sodor_core.core.simulated_pipeline_buffer.Added__.*",
+                    ".*correctness.sodor_core.core.instruction_history_buffer.Added__.*",
+                    ".*sodor_core.core.simulated_pipeline_buffer._elementCount_.*",
+                    ".*sodor_core.core.instruction_history_buffer.Added__Vcond_if_sodor_verilog_Sodor_CircularBufferNoReadOut.*",
+                    ".*sodor_core.core.simulated_pipeline_buffer.writePtr.*",
+                    ".*sodor_core.core.simulated_pipeline_buffer.Added__Vcond_if_sodor_verilog_Sodor_PipelineBuffer_sv.*",
+                    ".*sodor_core.core.simulated_pipeline_buffer.Added__Vcond_tern_sodor_verilog_Sodor_Pipeline.*",
+                    ".*correctness.sodor_core.core.simulated_pipeline_buffer.buffer_2.*",
+                    ".*sodor_core.core.simulated_pipeline_buffer._elementCount_.*",
+                    ".*sodor_core.core.d.csr.reg_mtval.*",
+                    ".*sodor_core.core.simulated_pipeline_buffer.Added__Vcond_tern_sodor_verilog.*",
+                    ".*sodor_core.core.instruction_history_buffer.*",
+                    ".*sodor_core.core.simulated_pipeline_buffer.*",
+                    ".*sodor_core.core.d.csr.reg_mepc.*",
+                    ".*sodor_core.core.d.csr.reg_.*",
+                    ".*.sodor_core.core.d.csr._read_mtvec_T_5.*",
+                    ". sodor_core.core.d.csr._decoded_addr_decoded_decoded_andMatrixOutputs_T_37.*",
+                    ".*sodor_core.core.d.csr._GEN_0.*",
+                    ".*decoded_addr_decoded_decoded_andMatrixOutputs_.*"
+                ]
+            }
+        },
+        {
+            "dut_only": {
+                "include": [
+                    ".*kronos.*",
+                    ".*correctness.commit_counter_kronos"
+                ],
+                "exclude": [
+                    ".*.clk",
+                    ".*.clock",
+                    ".*.rst",
+                    ".*.reset",
+                    ".*.reset_n",
+                    ".*all_zero_fence_i.*",
+                    ".*all_zero_fence_d.*"
+                ]
+            }
+        }
+    ]
+}

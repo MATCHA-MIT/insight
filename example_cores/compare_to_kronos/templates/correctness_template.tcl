@@ -2,23 +2,23 @@
 set_automatic_library_search on
 analyze \
   -sv -lib uArchLib -mfcu \
-  -y kronos_no_missing_csr/rtl/core -y rtl \
+  -y ../kronos_designs/kronos_baseline/rtl/core -y ../rtl \
   +libext+.sv \
-  +incdir+kronos_no_missing_csr/rtl/core \
+  +incdir+../kronos_designs/kronos_baseline/rtl/core \
   +define+SYNTHESIS +define+TIMER_ADDR=32'hcc000000 +define+MEMSIZE=128 \
-  -L kronos_no_missing_csr/rtl kronos_no_missing_csr/rtl/core/kronos_types.sv \
-  -sv  rtl/sim_top.sv
+  -L ../kronos_designs/kronos_baseline/rtl ../kronos_designs/kronos_baseline/rtl/core/kronos_types.sv \
+  -sv  ../rtl/sim_top.sv
 
 analyze \
   -lib sodorLib -mfcu \
-  -y sodor_verilog +libext+.sv +define+SYNTHESIS \
-  -sv sodor_verilog/Sodor_SodorInternalTile.sv
-analyze -sv correctness.sv
+  -y ../sodor_verilog +libext+.sv +define+SYNTHESIS \
+  -sv ../sodor_verilog/Sodor_SodorInternalTile.sv
+analyze -sv ../correctness.sv
 # +define+CHECKER_DATA_WIDTH=32 +define+CHECKER_TARGET_WIDTH=6 +define+CHECKER_PC_WIDTH=32 
 #+define+CHECKER_MaxNumTracedInstructions=10 +define+CHECKER_MAX_EXECUTION_WINDOW=10 
 elaborate -top cfg -disable_auto_bbox
 clock -both_edges clk
-reset rst -non_resettable_regs 0 -init_state KRONOS.init 
+reset rst -non_resettable_regs 0 -init_state ../build_config/KRONOS.init 
 
 set_prove_per_property_max_time_limit {TIME_LIMIT}s
 set_prove_time_limit {TIME_LIMIT}s
@@ -204,5 +204,5 @@ set_trace_optimization -irrelevant_value_computation true
 #set_trace_optimization standard
 set_max_trace_length 35
 
-prove -property {correct_check} -dump_trace -dump_trace_type vcd -dump_trace_dir jg_vcd_out 
+prove -property {correct_check} -dump_trace -dump_trace_type vcd -dump_trace_dir ../jg_vcd_out 
 # -run -auto

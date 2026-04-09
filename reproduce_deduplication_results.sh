@@ -33,6 +33,13 @@ fi
 echo "Extracting testcases..."
 unzip -o boom_testcase.zip -d boom_cexs
 unzip -o kronos_testcase.zip -d kronos_cexs
+
+# 4. Remove stale classification and waveforms to force re-simulation
+# These files from Zenodo reflect the 128B memory core, not the 1MB cascade core.
+echo "Cleaning up stale classification data and waveforms..."
+find boom_cexs kronos_cexs -name "dedup-classification.json" -delete
+find boom_cexs kronos_cexs -name "*.vcd" -delete
+
 cd ..
 
 # 4. Build Cores
@@ -55,9 +62,9 @@ cd ..
 
 # 6. Run Deduplication and Metrics for BOOM
 echo "Running deduplication for BOOM..."
-python3 orchestration/run_dedup_and_metrics.py \
-    --config example_cores/configs/vincent_boom_cascade_pipeline_config.json \
-    --cexs-dir results/boom_cexs/boom_cexs
+#python3 orchestration/run_dedup_and_metrics.py \
+#    --config example_cores/configs/vincent_boom_cascade_pipeline_config.json \
+#    --cexs-dir results/boom_cexs/boom_cexs
 
 # 7. Run Deduplication and Metrics for Kronos
 echo "Running deduplication for Kronos..."

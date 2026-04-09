@@ -449,8 +449,8 @@ pub extern "C" fn check_cex_items_all_invariants(
         // if item.file == "evaluation_data/dedup/testcases/reduced-testcases-k1-k4-k5/testcase-k1-1259.bin" {
         //     println!("Item {:?} satisfies invariants at indices {:?}", item, idx);
         // }
-        let invariant_strings: Vec<String> = idx.iter().map(|i| invariants[*i].to_string()).collect();
-        res.push((item.clone(), invariant_strings));
+        let invariant_paths: Vec<String> = idx.iter().map(|i| invariants_with_path[*i].path.clone()).collect();
+        res.push((item.clone(), invariant_paths));
     }
     //let filtered_items: Vec<&FuzzerDataPoint> = utils::check_cex_items_against_invariants(&items, &invariants);
     let json_string = serde_json::to_string(&res).unwrap();

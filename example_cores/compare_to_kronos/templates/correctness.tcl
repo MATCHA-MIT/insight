@@ -212,5 +212,5 @@ set_trace_optimization -irrelevant_value_computation true
 #set_trace_optimization standard
 set_max_trace_length 35
 
-prove -property {correct_check} -dump_trace -dump_trace_type vcd -dump_trace_dir jg_vcd_out 
+prove -property {correct_check} -dump_trace -dump_trace_type vcd -dump_trace_dir ../jg_vcd_out 
 # -run -auto

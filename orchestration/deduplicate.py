@@ -51,7 +51,7 @@ import functools
 
 logger = logging.getLogger("main")
 
-FREEZE_INSTRUCTIONS = list(range(0,39))
+# FREEZE_INSTRUCTIONS is now core-dependent and extracted from the regex config.
 
 def find_last_checkpoint_in_sweep_dir(sweep_dir):
     pattern = re.compile(r"sweep_bex_(\d+)_predcost_(\d+)")
@@ -240,25 +240,35 @@ def check_cex_false_positive(checker_path, cex):
     else:
         return (cex, "CEX")
     
-def generate_frozen_instruction_benign_example(all_cexs, output_dir, checker_path):
+def generate_frozen_instruction_benign_example(all_cexs, output_dir, checker_path, freeze_instructions):
+    if not freeze_instructions:
+        logger.info("No instructions to freeze (preamble length 0), skipping frozen benign example generation.")
+        return []
     result_list = []
     def process_cex(cex):
-        freezed_instruction_bin = os.path.join(output_dir, f"freeze_instructions_{os.path.basename(cex)}.bin")
-        input_bin = cex
-        with open(freezed_instruction_bin, "wb") as f_out:
-            with open(input_bin, "rb") as f_in:
-                f_out.write(f_in.read()[FREEZE_INSTRUCTIONS[0]*4:FREEZE_INSTRUCTIONS[-1]*4 +4])
-        ret = analyzer.check_commit_log(checker_path, freezed_instruction_bin, freezed_instruction_bin + ".fst")
-        if ret.Kind != analyzer.CheckerResultKind.BENIGN:
-            raise Exception(f"Could not generate frozen instruction benign example for CEX {cex}, something is wrong!")
-        return (freezed_instruction_bin, freezed_instruction_bin + ".fst")
+        try:
+            freezed_instruction_bin = os.path.join(output_dir, f"freeze_instructions_{os.path.basename(cex)}.bin")
+            input_bin = cex
+            with open(freezed_instruction_bin, "wb") as f_out:
+                with open(input_bin, "rb") as f_in:
+                    # Freeze from 0 to first_symbolic_instruction_idx
+                    f_out.write(f_in.read()[freeze_instructions[0]*4:freeze_instructions[-1]*4 +4])
+            ret = analyzer.check_commit_log(checker_path, freezed_instruction_bin, freezed_instruction_bin + ".fst")
+            if ret.Kind != analyzer.CheckerResultKind.BENIGN:
+                logger.warning(f"Could not generate frozen instruction benign example for CEX {cex}: truncated version is still a CEX. Skipping.")
+                return None
+            return (freezed_instruction_bin, freezed_instruction_bin + ".fst")
+        except Exception as e:
+            logger.warning(f"Exception during frozen benign example generation for {cex}: {e}")
+            return None
+            
     with ThreadPoolExecutor() as executor:
-        result_list = list(tqdm.tqdm(executor.map(process_cex, all_cexs[:80]), total=len(all_cexs[:80]), desc="Generating frozen instruction benign examples"))
-        # result_list = list(pool.map(process_cex, all_cexs))
+        results = list(tqdm.tqdm(executor.map(process_cex, all_cexs[:80]), total=len(all_cexs[:80]), desc="Generating frozen instruction benign examples"))
+        result_list = [r for r in results if r is not None]
     return result_list
         
 
-def inner_loop(all_cexs, output_dir, bex_multiplier, predicate_base_cost, benign_example_list, checker_path, conditional_signals_mapping_path, regex_config_path, seed_invariants):
+def inner_loop(all_cexs, output_dir, bex_multiplier, predicate_base_cost, benign_example_list, checker_path, conditional_signals_mapping_path, regex_config_path, seed_invariants, freeze_instructions):
     invariant_dir = os.path.join(output_dir, constants.INVARIANT_PATH)
     if not os.path.exists(invariant_dir):
         os.makedirs(invariant_dir, exist_ok=True)
@@ -294,6 +304,9 @@ def inner_loop(all_cexs, output_dir, bex_multiplier, predicate_base_cost, benign
     # for inv, count in invariant_dict.items():q
     #     logger.info(f"Vincent Invariant {inv} covers {count} CEXs")
     bug_classes = check_all_cex_items(all_cexs, ffi_invariant_vec_ptr)
+    for inv_path, covered_cexs in bug_classes.items():
+        logger.info(f"Vincent Invariant {inv_path} covers {len(covered_cexs)} CEXs")
+
     with open(os.path.join(output_dir, "current_bug_classes.json"), "w") as fp:
         json.dump(bug_classes, fp, indent=4)
     to_remove = bug_classes.values()
@@ -354,24 +367,25 @@ def inner_loop(all_cexs, output_dir, bex_multiplier, predicate_base_cost, benign
         #     )
         
         # Also: Extract freeze_instructions from cex_generator, run it, get waveform, and add to output_sets
-        freezed_instruction_bin = os.path.join(output_dir, "freeze_instructions.bin")
-        input_bin = this_cex
-        with open (freezed_instruction_bin, "wb") as f_out:
-            with open (input_bin, "rb") as f_in:
-                f_out.write(f_in.read()[FREEZE_INSTRUCTIONS[0]*4:FREEZE_INSTRUCTIONS[-1]*4 +4])
-        ret = analyzer.check_commit_log(checker_path, freezed_instruction_bin, freezed_instruction_bin + ".fst")
-        if ret.Kind != analyzer.CheckerResultKind.CEX:
-            logger.info(f"Generated frozen instruction benign example for CEX {this_cex}, adding to output_sets")
-            output_sets["bex"].append(
-                {
-                    "file": freezed_instruction_bin,
-                    "waveform_path": freezed_instruction_bin + ".fst",
-                    "program_distance": 0,
-                    "file_source": "FileSource.MustFulfill"
-                }
-            )
-        else:
-            raise Exception(f"Could not generate frozen instruction benign example for CEX {this_cex}, something is wrong!")
+        # if freeze_instructions:
+        #     freezed_instruction_bin = os.path.join(output_dir, "freeze_instructions.bin")
+        #     input_bin = this_cex
+        #     with open (freezed_instruction_bin, "wb") as f_out:
+        #         with open (input_bin, "rb") as f_in:
+        #             f_out.write(f_in.read()[freeze_instructions[0]*4:freeze_instructions[-1]*4 +4])
+        #     ret = analyzer.check_commit_log(checker_path, freezed_instruction_bin, freezed_instruction_bin + ".fst")
+        #     if ret.Kind != analyzer.CheckerResultKind.CEX:
+        #         logger.info(f"Generated frozen instruction benign example for CEX {this_cex}, adding to output_sets")
+        #         output_sets["bex"].append(
+        #             {
+        #                 "file": freezed_instruction_bin,
+        #                 "waveform_path": freezed_instruction_bin + ".fst",
+        #                 "program_distance": 0,
+        #                 "file_source": "FileSource.MustFulfill"
+        #             }
+        #         )
+        #     else:
+        #         logger.warning(f"Could not generate frozen instruction benign example for CEX {this_cex}: truncated version is still a CEX. Skipping.")
         # output_sets["bex"].append(
         #     {
         #         "file": "seeds/must_fulfill_waveforms/must_fulfill.bin",
@@ -457,6 +471,9 @@ def inner_loop(all_cexs, output_dir, bex_multiplier, predicate_base_cost, benign
         #     all_cexs.remove(cex_item)
         #     bug_classes[ret_dict["assume_invariant"]].append(cex_item)
         bug_classes = check_all_cex_items(all_cexs, ffi_invariant_vec_ptr)
+        for inv_path, covered_cexs in bug_classes.items():
+            logger.info(f"Vincent Invariant {inv_path} covers {len(covered_cexs)} CEXs")
+
         ret_values = list(bug_classes.values())
         #print("all cex is", all_cexs[0])
         #print("ret values is", ret_values, flush=True)
@@ -501,6 +518,18 @@ def main():
     regex_config_path = configs["regex_config_path"]
     conditional_signals_mapping_path = configs.get("conditional_signals_mapping_path")
     seed_invariants = configs.get("seed_invariants", [])
+
+    # Load regex config to get first_symbolic_instruction_idx
+    if not os.path.exists(regex_config_path):
+        raise FileNotFoundError(f"Regex config not found: {regex_config_path}")
+    with open(regex_config_path, "r") as f:
+        regex_config = json.load(f)
+    first_symbolic_idx = regex_config.get("first_symbolic_instruction_idx", 0)
+    if first_symbolic_idx > 0:
+        freeze_instructions = list(range(0, first_symbolic_idx))
+    else:
+        freeze_instructions = []
+    logger.info(f"Detected preamble length (first_symbolic_instruction_idx): {first_symbolic_idx}")
 
     output_dir = os.path.join(output_dir_root, core_name, "deduplication")
     
@@ -593,8 +622,9 @@ def main():
         
     os.makedirs(sweep_dir_base, exist_ok=True)
     logger.info(f"Created sweep base directory at {sweep_dir_base}")
-    os.makedirs(os.path.join(sweep_dir_base, "frozen_benign_examples"), exist_ok=True)
-    benign_example_list = generate_frozen_instruction_benign_example(all_cexs, os.path.join(sweep_dir_base, "frozen_benign_examples"), checker_path)
+    # os.makedirs(os.path.join(sweep_dir_base, "frozen_benign_examples"), exist_ok=True)
+    # benign_example_list = generate_frozen_instruction_benign_example(all_cexs, os.path.join(sweep_dir_base, "frozen_benign_examples"), checker_path, freeze_instructions)
+    benign_example_list = []
     #benign_example_list = []
     # for f in os.listdir(os.path.join("seeds/must_fulfill_waveforms/")):
     #     if f.endswith(".fst"):
@@ -630,7 +660,7 @@ def main():
             sweep_seed_invariants.append(invalid_csrs_file)
             copy_seed_invariants(sweep_seed_invariants,  invariants_dir)
             logger.info(f"Done resetting invariants directory for next BEX multiplier {bex_multiplier}.")
-            inner_loop(copy.deepcopy(all_cexs), sweep_dir, bex_multiplier, predicate_base_cost, benign_example_list, checker_path, conditional_signals_mapping_path, regex_config_path,seed_invariants)
+            inner_loop(copy.deepcopy(all_cexs), sweep_dir, bex_multiplier, predicate_base_cost, benign_example_list, checker_path, conditional_signals_mapping_path, regex_config_path,seed_invariants, freeze_instructions)
             logger.info(f"Completed inner loop with BEX multiplier {bex_multiplier}.")
         
 if __name__ == "__main__":

@@ -29,3 +29,6 @@ obj_dir*/
 example_cores/compare_to_boom_buggy/generated_files/correctness.tcl
 correctness.tcl
 invariant.tcl
+example_cores/compare_to_kronos/templates/correctness.tcl
+example_cores/compare_to_kronos/templates/invariant.tcl
+scratch/*

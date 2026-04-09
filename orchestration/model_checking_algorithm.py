@@ -437,7 +437,17 @@ class JGConnector:
             temp_sh_file.write(b"#!/bin/tcsh\n")
             temp_sh_file.write(b"use JASPER\n")
             temp_sh_file.write(f"cd {tcl_script_dir}\n".encode())
-            temp_sh_file.write(f"rm {vcd_out_path}/* \n".encode())
+            # tcsh errors on unmatched globs, so guard the rm with a glob check
+            temp_sh_file.write(f"rm -f {vcd_out_path}/* >& /dev/null\n".encode())
+            # Workaround for NFS stale file handles: JasperGold tries to
+            # rm -rf sessionLogs.bak before rotating sessionLogs, but NFS
+            # "silly rename" (.nfs*) ghost files cause "Device or resource busy".
+            # Fix: rename the stale .bak dir (always succeeds on NFS), then
+            # delete it in the background so JG can recreate .bak cleanly.
+            temp_sh_file.write(b"if ( -d automated_jasper_run/sessionLogs.bak ) then\n")
+            temp_sh_file.write(b"  mv automated_jasper_run/sessionLogs.bak automated_jasper_run/sessionLogs.bak.$$ >& /dev/null\n")
+            temp_sh_file.write(b"  rm -rf automated_jasper_run/sessionLogs.bak.$$ &\n")
+            temp_sh_file.write(b"endif\n")
             temp_sh_file.write(f"jg {tcl_script_filename} -batch -acquire_proj -proj automated_jasper_run | tee jg_out.log\n".encode()) # I am not sure whether we should really acquire the project here
             #temp_sh_file.write(f" \n".encode())
             #temp_sh_file.write(f"cat jg_out.log\n".encode())

@@ -63,7 +63,7 @@ assume {valid_inst}
 #ibex commits -- therefore, if jaspergold finds a counterexample that is below 15 cycles
 #we never check correctness.
 #This creates a mismatch between jaspergold and verilator results
-prove -all -asserts -dump_trace -dump_trace_type vcd -dump_trace_dir jg_vcd_out 
+prove -all -asserts -dump_trace -dump_trace_type vcd -dump_trace_dir ../jg_vcd_out 
 
 # GARBAGE
 
