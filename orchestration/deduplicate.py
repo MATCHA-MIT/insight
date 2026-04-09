@@ -29,6 +29,7 @@ import random
 
 import tqdm
 import generate_csr_separators
+import seed_generator
 
 subdir = Path(__file__).parent.parent / "mutation_engine"
 sys.path.insert(0, str(subdir))
@@ -484,6 +485,7 @@ def inner_loop(all_cexs, output_dir, bex_multiplier, predicate_base_cost, benign
     
 
 def main():
+    seed_generator.ensure_seeds_exist()
     parser = argparse.ArgumentParser(description="Deduplicate CEXs and classify bug classes.")
     parser.add_argument("--config", required=True, help="Path to config file")
     parser.add_argument("--cexs-dir", required=False, help="Path to the directory containing CEX files (optional, derived from config if not provided)")

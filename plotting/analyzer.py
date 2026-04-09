@@ -1252,12 +1252,8 @@ if __name__ == "__main__":
         config = json.load(open(configs_path, "r"))
         print(f"Loaded config from {configs_path}")
         regex_config = json.load(open(configs_path, "r"))
-        if "first_symbolic_instruction_idx" in config:
-            first_symbolic_instruction_idx = config["first_symbolic_instruction_idx"]
-        if "start_address" in config:
-            start_address = int(config["start_address"],16)
-        else: 
-            start_address = 0x80000080
+        first_symbolic_instruction_idx = config.get("first_symbolic_instruction_idx", 0)
+        start_address = int(config.get("start_address", "0x80000080"), 16)
         print("config is", config)
         print("start address", hex(start_address))
     #output_path = config["output"]

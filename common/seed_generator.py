@@ -4,6 +4,18 @@ import os
 import sys
 import random
 import subprocess
+from pathlib import Path
+
+# Add project root to sys.path to import constants if needed
+project_root = Path(__file__).parent.parent
+if str(project_root) not in sys.path:
+    sys.path.append(str(project_root))
+
+try:
+    import common.constants as constants
+except ImportError:
+    # Fallback if constants cannot be imported directly
+    constants = None
 
 def generate_nop():
     return f"   addi x0, x0, 0"
@@ -166,6 +178,7 @@ _start:
 def compile_to_bin(source_file, bin_file):
     """Compile a .s file to a .bin file using the provided shell script."""
     try:
+        # Use relative path from project root
         subprocess.run(['./util_scripts/compile_testcase_to_hex.sh', source_file, bin_file], check=True)
     except subprocess.CalledProcessError as e:
         print(f"Error compiling {source_file}: {e}")
@@ -199,6 +212,26 @@ def generate_assembly_files(out_dir, num_files=1000):
         compile_to_bin(os.path.join(source_dir, s_file), os.path.join(bin_dir, bin_file))
 
     print(f"Files generated and compiled successfully: {num_files} valid, {num_files} invalid, and 4096 CSR read files")
+
+def ensure_seeds_exist(seeds_dir=None):
+    """
+    Check if seeds exist in the specified directory.
+    If not, generate them.
+    """
+    if seeds_dir is None:
+        if constants:
+            # constants.SEEDS_DIR is typically "insight_output/seeds/binaries"
+            seeds_dir = os.path.dirname(constants.SEEDS_DIR)
+        else:
+            seeds_dir = "insight_output/seeds"
+    
+    binaries_dir = os.path.join(seeds_dir, "binaries")
+    if os.path.exists(binaries_dir) and os.listdir(binaries_dir):
+        # Seeds already exist
+        return
+    
+    print(f"Seeds not found in {seeds_dir}. Generating...")
+    generate_assembly_files(seeds_dir)
 
 if __name__ == "__main__":
     if len(sys.argv) > 2:

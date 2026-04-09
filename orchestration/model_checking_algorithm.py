@@ -35,6 +35,7 @@ import enum
 import typing
 import generate_csr_separators
 import pathlib
+import seed_generator
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -1410,4 +1411,5 @@ def main():
                 pipeline_loop.run()
 
 if __name__ == "__main__":
+    seed_generator.ensure_seeds_exist()
     main()

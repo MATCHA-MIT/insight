@@ -327,34 +327,94 @@ def extract_mnemonic(instr_line: str) -> str:
     return ""
 
 
+def extract_csr_info(instr_line: str):
+    """Extract mnemonic, CSR name, and read/write flags from an instruction line."""
+    m = re.search(r"^\s*\d+:\s+[0-9a-fA-F]+\s+([a-zA-Z.]+)\s+(.*)$", instr_line)
+    if not m:
+        m_simple = re.search(r"^\s*([a-zA-Z.]+)\s+(.*)$", instr_line)
+        if not m_simple:
+             # Try just mnemonic
+             mnemonic = extract_mnemonic(instr_line)
+             return mnemonic, None, False, False
+        mnemonic = m_simple.group(1).lower()
+        ops_str = m_simple.group(2)
+    else:
+        mnemonic = m.group(1).lower()
+        ops_str = m.group(2)
+
+    operands = [o.strip() for o in ops_str.split(",")]
+
+    csr_map = {
+        "rdcycle": "cycle", "rdcycleh": "cycleh",
+        "rdinstret": "instret", "rdinstreth": "instreth",
+        "rdtime": "time", "rdtimeh": "timeh"
+    }
+
+    csr = None
+    if mnemonic in csr_map:
+        csr = csr_map[mnemonic]
+    elif mnemonic in {"csrrw", "csrrs", "csrrc", "csrrwi", "csrrsi", "csrrci", "csrr"}:
+        if len(operands) >= 2:
+            csr = operands[1]
+    elif mnemonic in {"csrw", "csrs", "csrc", "csrwi", "csrsi", "csrci"}:
+        if len(operands) >= 1:
+            csr = operands[0]
+
+    is_write = mnemonic in {"csrrw", "csrrs", "csrrc", "csrrwi", "csrrsi", "csrrci", "csrw", "csrs", "csrc", "csrwi", "csrsi", "csrci"}
+    is_read = mnemonic in {"csrrw", "csrrs", "csrrc", "csrrwi", "csrrsi", "csrrci", "csrr", "rdcycle", "rdcycleh", "rdinstret", "rdinstreth", "rdtime", "rdtimeh"}
+
+    return mnemonic, csr, is_write, is_read
+
+
 def classify_all_triggered_cex(instr_lines: list[str]) -> str:
     if not instr_lines:
         return "U?"
 
     lower_lines = [line.lower() for line in instr_lines]
-    mnemonics = [extract_mnemonic(line) for line in instr_lines]
-    mnemonics = [m for m in mnemonics if m]
 
-    csr_mnemonics = {
-        "csrrw", "csrrs", "csrrc", "csrrwi", "csrrsi", "csrrci",
-        "csrr", "csrw", "csrs", "csrc", "csrwi", "csrsi", "csrci",
-        "rdcycle", "rdcycleh", "rdinstret", "rdinstreth",
-    }
-    csr_count = sum(1 for m in mnemonics if m in csr_mnemonics or m.startswith("csr"))
+    # Track CSR info and check for jumps
+    csr_info_list = []
+    has_jump = False
 
-    # Rule order follows the user specification.
-    if len(mnemonics) == 1 and csr_count == 1:
-        return "U1"
+    for line in instr_lines:
+        mnemonic, csr, is_write, is_read = extract_csr_info(line)
+        if mnemonic in {"jal", "jalr", "j", "jr"} or mnemonic.startswith("jal"):
+            has_jump = True
+        if csr or is_write or is_read:
+            csr_info_list.append({
+                "mnemonic": mnemonic,
+                "csr": csr,
+                "is_write": is_write,
+                "is_read": is_read
+            })
 
-    if any(m in {"jal", "jalr", "j", "jr"} or m.startswith("jal") for m in mnemonics):
+    # Rule order:
+    # 1. U2 (Jumps)
+    if has_jump:
         return "U2"
 
+    # 2. B1 (Minstret mentions >= 2)
     minstret_mentions = sum(line.count("minstret") + line.count("minstreth") for line in lower_lines)
     if minstret_mentions >= 2:
         return "B1"
 
-    if any(re.search(r"\bwfi\b", line) for line in lower_lines): # or any(re.search(r"\b\b", line) for line in lower_lines):
+    # 3. U3 (Same CSR dependency: Write then subsequent Read)
+    for i in range(len(csr_info_list)):
+        for j in range(i + 1, len(csr_info_list)):
+            info_i = csr_info_list[i]
+            info_j = csr_info_list[j]
+            if info_i["is_write"] and info_j["is_read"]:
+                if info_i["csr"] and info_j["csr"] and info_i["csr"] == info_j["csr"]:
+                    return "U3"
+
+    # 4. U1 (Any CSR instruction if not U3)
+    if csr_info_list:
+        return "U1"
+
+    # 5. U4 (WFI)
+    if any(re.search(r"\bwfi\b", line) for line in lower_lines):
         return "U4"
+
     print("Returning U? for ", instr_lines)
     return "U?"
 
@@ -602,229 +662,230 @@ def compute_successful_queries_avg_time(df: pd.DataFrame) -> tuple[float, int]:
 
 
 # ------------------ MAIN ------------------
-if len(sys.argv) < 2:
-    print("Usage: python script.py file1.csv file2.csv ...")
-    sys.exit(1)
-
-files = sys.argv[1:]
-
-# Distinct colors per file (good contrast for print)
-base_colors = [
-    "#1b9e77", "#d95f02", "#7570b3", "#e7298a",
-    "#66a61e", "#e6ab02", "#a6761d", "#666666"
-]
-color_cycle = itertools.cycle(base_colors)
-
-# --- Plot 1: Combined Issues ---
-plt.figure()
-
-summary_rows = []  # collect per-file stats for LaTeX table
-
-issue_records = []  # rows for issue_detection_times.csv across all runs
-for f, color in zip(files, color_cycle):
-    df = pd.read_csv(f, sep=';')
-    df = normalize_time(df)
-
-    bex_weight, predicate_weight = extract_weights(f)
-    label_suffix = (f"($\\lambda$={bex_weight}%, $\\mu$=0.{predicate_weight}%)"
-                    if predicate_weight is not None else
-                    "Baseline (BOOM)")
-    end_time = float(df["NormTime"].max()) if "NormTime" in df and len(df) else 0.0
-
-    # ---- Successful queries only (non-timeout) ----
-    avg_q_time, num_success_q = compute_successful_queries_avg_time(df)
-
-    # ---- Avg Insight run ----
-    avg_run = compute_avg_insight_run_minutes(df)
-
-    # ---- Total runtime (minutes) ----
-    if "Time" in df.columns and len(df):
-        total_runtime_min = (float(df["Time"].max()) - float(df["Time"].min())) / 60.0
-    else:
-        total_runtime_min = float('nan')
-
-    # ---- Finished totals per your request ----
-    # total_jg_finished_min = compute_total_jg_finished_minutes(df)
-    # total_insight_finished_min = compute_total_insight_finished_minutes(df)
-    # ---- Determine cutoff/budget (minutes) based on config) ----
-    # If we parsed a predicate_weight, treat it as a non-baseline (12h); otherwise baseline (24h).
-    budget_min = 720.0 if predicate_weight is not None else 1440.0  # 12h vs 24h
-
-    # ---- Collect finished windows (JG + Insight) and clip to budget on ACTIVE time ----
-    jg_windows  = _finished_windows(df, r"^jg_query_started", r"^jg_query_completed", "JG")
-    mut_windows = _finished_windows(df, r"^mutation_start(?:ed)?", r"^mutation_completed", "INSIGHT")
-    sep_windows = _finished_windows(df, r"^separator_started", r"^separator_completed", "INSIGHT")
-
-    all_windows = jg_windows + mut_windows + sep_windows
-    clipped = _clip_to_budget(all_windows, budget_min)
-
-    # ---- Compute clipped totals per category and overall active runtime ----
-    total_runtime_min = sum(d for _, d, _ in clipped)  # active processing time within budget
-    total_jg_finished_min = sum(d for _, d, tag in clipped if tag == "JG")
-    total_insight_finished_min = sum(d for _, d, tag in clipped if tag == "INSIGHT")
-
-    # ---- Invariant predicate complexity stats ----
-    avg_predicates_per_invariant, std_predicates_per_invariant, num_invariants = compute_predicate_stats_for_run(f)
-
-
-    # ---- Discovered issues with first-detection times ----
-    issue_time_map = extract_issue_time_map(df)
-
-    # Emit per-issue rows for the CSV (sorted by time)
-    for txt, tmin in sorted(issue_time_map.items(), key=lambda kv: kv[1]):
-        issue_records.append({
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Usage: python script.py file1.csv file2.csv ...")
+        sys.exit(1)
+    
+    files = sys.argv[1:]
+    
+    # Distinct colors per file (good contrast for print)
+    base_colors = [
+        "#1b9e77", "#d95f02", "#7570b3", "#e7298a",
+        "#66a61e", "#e6ab02", "#a6761d", "#666666"
+    ]
+    color_cycle = itertools.cycle(base_colors)
+    
+    # --- Plot 1: Combined Issues ---
+    plt.figure()
+    
+    summary_rows = []  # collect per-file stats for LaTeX table
+    
+    issue_records = []  # rows for issue_detection_times.csv across all runs
+    for f, color in zip(files, color_cycle):
+        df = pd.read_csv(f, sep=';')
+        df = normalize_time(df)
+    
+        bex_weight, predicate_weight = extract_weights(f)
+        label_suffix = (f"($\\lambda$={bex_weight}%, $\\mu$=0.{predicate_weight}%)"
+                        if predicate_weight is not None else
+                        "Baseline (BOOM)")
+        end_time = float(df["NormTime"].max()) if "NormTime" in df and len(df) else 0.0
+    
+        # ---- Successful queries only (non-timeout) ----
+        avg_q_time, num_success_q = compute_successful_queries_avg_time(df)
+    
+        # ---- Avg Insight run ----
+        avg_run = compute_avg_insight_run_minutes(df)
+    
+        # ---- Total runtime (minutes) ----
+        if "Time" in df.columns and len(df):
+            total_runtime_min = (float(df["Time"].max()) - float(df["Time"].min())) / 60.0
+        else:
+            total_runtime_min = float('nan')
+    
+        # ---- Finished totals per your request ----
+        # total_jg_finished_min = compute_total_jg_finished_minutes(df)
+        # total_insight_finished_min = compute_total_insight_finished_minutes(df)
+        # ---- Determine cutoff/budget (minutes) based on config) ----
+        # If we parsed a predicate_weight, treat it as a non-baseline (12h); otherwise baseline (24h).
+        budget_min = 720.0 if predicate_weight is not None else 1440.0  # 12h vs 24h
+    
+        # ---- Collect finished windows (JG + Insight) and clip to budget on ACTIVE time ----
+        jg_windows  = _finished_windows(df, r"^jg_query_started", r"^jg_query_completed", "JG")
+        mut_windows = _finished_windows(df, r"^mutation_start(?:ed)?", r"^mutation_completed", "INSIGHT")
+        sep_windows = _finished_windows(df, r"^separator_started", r"^separator_completed", "INSIGHT")
+    
+        all_windows = jg_windows + mut_windows + sep_windows
+        clipped = _clip_to_budget(all_windows, budget_min)
+    
+        # ---- Compute clipped totals per category and overall active runtime ----
+        total_runtime_min = sum(d for _, d, _ in clipped)  # active processing time within budget
+        total_jg_finished_min = sum(d for _, d, tag in clipped if tag == "JG")
+        total_insight_finished_min = sum(d for _, d, tag in clipped if tag == "INSIGHT")
+    
+        # ---- Invariant predicate complexity stats ----
+        avg_predicates_per_invariant, std_predicates_per_invariant, num_invariants = compute_predicate_stats_for_run(f)
+    
+    
+        # ---- Discovered issues with first-detection times ----
+        issue_time_map = extract_issue_time_map(df)
+    
+        # Emit per-issue rows for the CSV (sorted by time)
+        for txt, tmin in sorted(issue_time_map.items(), key=lambda kv: kv[1]):
+            issue_records.append({
+                "Config": label_suffix,
+                "Issue": txt,
+                "DetectedAtMin": round(tmin, 4)
+            })
+    
+        # Build LaTeX cell: "Issue (12.34m); Issue2 (45.00m) ..."
+        issues_with_times = [f"{txt} ({issue_time_map[txt]:.2f}m)" for txt in sorted(issue_time_map, key=lambda k: issue_time_map[k])]
+        issues_cell = list_to_latex_cell(issues_with_times)
+    
+        # Count for queries-per-issue
+        num_issues_found = len(issue_time_map)
+        queries_per_issue = (num_success_q / num_issues_found) if num_issues_found > 0 else float('nan')
+    
+        summary_rows.append({
             "Config": label_suffix,
-            "Issue": txt,
-            "DetectedAtMin": round(tmin, 4)
+            "AvgTimePerQueryMin": avg_q_time,
+            "NumSuccessQueries": num_success_q,
+            "QueriesPerIssue": queries_per_issue,
+            "AvgInsightRunMin": avg_run,
+            "TotalRuntimeMin": total_runtime_min,
+            "TotalJGFinishedMin": total_jg_finished_min,
+            "TotalInsightFinishedMin": total_insight_finished_min,
+            "AvgPredicatesPerInvariant": avg_predicates_per_invariant,
+            "StdPredicatesPerInvariant": std_predicates_per_invariant,
+            "NumInvariants": num_invariants,
+            "IssuesText": issues_cell,
+            "NumIssues": num_issues_found,
         })
-
-    # Build LaTeX cell: "Issue (12.34m); Issue2 (45.00m) ..."
-    issues_with_times = [f"{txt} ({issue_time_map[txt]:.2f}m)" for txt in sorted(issue_time_map, key=lambda k: issue_time_map[k])]
-    issues_cell = list_to_latex_cell(issues_with_times)
-
-    # Count for queries-per-issue
-    num_issues_found = len(issue_time_map)
-    queries_per_issue = (num_success_q / num_issues_found) if num_issues_found > 0 else float('nan')
-
-    summary_rows.append({
-        "Config": label_suffix,
-        "AvgTimePerQueryMin": avg_q_time,
-        "NumSuccessQueries": num_success_q,
-        "QueriesPerIssue": queries_per_issue,
-        "AvgInsightRunMin": avg_run,
-        "TotalRuntimeMin": total_runtime_min,
-        "TotalJGFinishedMin": total_jg_finished_min,
-        "TotalInsightFinishedMin": total_insight_finished_min,
-        "AvgPredicatesPerInvariant": avg_predicates_per_invariant,
-        "StdPredicatesPerInvariant": std_predicates_per_invariant,
-        "NumInvariants": num_invariants,
-        "IssuesText": issues_cell,
-        "NumIssues": num_issues_found,
-    })
-    print(df)
-
-    # ---- Plotting: cumulative discovered issues from the new CEX classification ----
-    issue_event_times = sorted(issue_time_map.values())
-    if issue_event_times:
-        combined_events_only = pd.DataFrame({
-            "NormTime": [0.0] + issue_event_times,
-            "Count": [0] + list(range(1, len(issue_event_times) + 1)),
-        })
+        print(df)
+    
+        # ---- Plotting: cumulative discovered issues from the new CEX classification ----
+        issue_event_times = sorted(issue_time_map.values())
+        if issue_event_times:
+            combined_events_only = pd.DataFrame({
+                "NormTime": [0.0] + issue_event_times,
+                "Count": [0] + list(range(1, len(issue_event_times) + 1)),
+            })
+        else:
+            combined_events_only = pd.DataFrame(columns=["NormTime", "Count"])
+        # Build the line series extended to end_time (adds synthetic last point if needed)
+        combined_line = extend_or_flatline(combined_events_only, end_time)
+    
+        # Draw the line (includes the synthetic flat tail)
+        plt.plot(combined_line["NormTime"], combined_line["Count"],
+                 linestyle='-', color=color, alpha=0.9)
+    
+        # Draw dots ONLY at real events (no dot at the synthetic end point)
+        scatter_df = combined_events_only[combined_events_only["Count"] > 0] if not combined_events_only.empty else combined_events_only
+        if not scatter_df.empty:
+            plt.scatter(scatter_df["NormTime"], scatter_df["Count"],
+                        color=color, marker='o', s=28, label=f"Configuration {label_suffix}")
+        else:
+            plt.scatter([], [], color=color, marker='o', s=28, label=f"Configuration {label_suffix}")
+    
+    plt.xlabel("Time (min)")
+    plt.ylabel("Cumulative Issues")
+    plt.title("Cumulative Issues Found Over Time (BOOM)", pad=10)
+    plt.legend(frameon=False, ncol=1)
+    plt.grid(True, linestyle=':', linewidth=0.5, alpha=0.8)
+    plt.tight_layout(pad=0.5)
+    plt.savefig(os.path.join(OUTPUT_DIR, "issues_vs_time.pdf"))
+    plt.close()
+    print("✅ Saved: issues_vs_time.pdf")
+    
+    # --- Save issue detection times (across all runs) ---
+    if issue_records:
+        pd.DataFrame(issue_records).sort_values(["Config", "DetectedAtMin"]).to_csv(os.path.join(OUTPUT_DIR, "issue_detection_times.csv"), index=False)
+        print("✅ Saved: issue_detection_times.csv")
     else:
-        combined_events_only = pd.DataFrame(columns=["NormTime", "Count"])
-    # Build the line series extended to end_time (adds synthetic last point if needed)
-    combined_line = extend_or_flatline(combined_events_only, end_time)
-
-    # Draw the line (includes the synthetic flat tail)
-    plt.plot(combined_line["NormTime"], combined_line["Count"],
-             linestyle='-', color=color, alpha=0.9)
-
-    # Draw dots ONLY at real events (no dot at the synthetic end point)
-    scatter_df = combined_events_only[combined_events_only["Count"] > 0] if not combined_events_only.empty else combined_events_only
-    if not scatter_df.empty:
-        plt.scatter(scatter_df["NormTime"], scatter_df["Count"],
-                    color=color, marker='o', s=28, label=f"Configuration {label_suffix}")
-    else:
-        plt.scatter([], [], color=color, marker='o', s=28, label=f"Configuration {label_suffix}")
-
-plt.xlabel("Time (min)")
-plt.ylabel("Cumulative Issues")
-plt.title("Cumulative Issues Found Over Time (BOOM)", pad=10)
-plt.legend(frameon=False, ncol=1)
-plt.grid(True, linestyle=':', linewidth=0.5, alpha=0.8)
-plt.tight_layout(pad=0.5)
-plt.savefig(os.path.join(OUTPUT_DIR, "issues_vs_time.pdf"))
-plt.close()
-print("✅ Saved: issues_vs_time.pdf")
-
-# --- Save issue detection times (across all runs) ---
-if issue_records:
-    pd.DataFrame(issue_records).sort_values(["Config", "DetectedAtMin"]).to_csv(os.path.join(OUTPUT_DIR, "issue_detection_times.csv"), index=False)
-    print("✅ Saved: issue_detection_times.csv")
-else:
-    print("ℹ️ No issues found to save (issue_detection_times.csv not created).")
-
-# --- Plot 2: jg_query_started (unchanged) ---
-plt.figure()
-color_cycle = itertools.cycle(base_colors)
-
-for f, color in zip(files, color_cycle):
-    df = pd.read_csv(f, sep=';')
-    df = normalize_time(df)
-    bex_weight, predicate_weight = extract_weights(os.path.basename(f))
-    label_prefix = (f"($\\lambda$={bex_weight}, $\\mu$={predicate_weight})"
-                    if predicate_weight is not None else
-                    os.path.basename(f))
-    end_time = float(df["NormTime"].max()) if "NormTime" in df and len(df) else 0.0
-
-    jg = df[df["Event"].str.contains("jg_query_started", na=False)][["NormTime"]].copy()
-    if jg.empty:
-        jg_plot = pd.DataFrame({"NormTime": [0.0, end_time], "Count": [0, 0]})
-    else:
-        jg["Count"] = range(1, len(jg) + 1)
-        start_row = pd.DataFrame({"NormTime": [0.0], "Count": [0]})
-        jg_plot = pd.concat([start_row, jg], ignore_index=True)
-        if jg_plot["NormTime"].iloc[-1] < end_time:
-            jg_plot = pd.concat(
-                [jg_plot, pd.DataFrame({"NormTime": [end_time], "Count": [jg_plot["Count"].iloc[-1]]})],
-                ignore_index=True
-            )
-
-    plt.plot(jg_plot["NormTime"], jg_plot["Count"],
-             linestyle='-', color=color, alpha=0.9)
-    if jg_plot["Count"].max() > 0:
-        plt.scatter(jg_plot["NormTime"], jg_plot["Count"],
-                    color=color, marker='o', s=28, label=label_prefix)
-    else:
-        plt.scatter([], [], color=color, marker='o', s=28, label=label_prefix)
-
-plt.xlabel("Time (min)")
-plt.ylabel("Cumulative Queries")
-plt.title("Cumulative jg_query_started Events", pad=10)
-plt.legend(frameon=False, ncol=1)
-plt.grid(True, linestyle=':', linewidth=0.5, alpha=0.8)
-plt.tight_layout(pad=0.5)
-plt.savefig(os.path.join(OUTPUT_DIR, "jg_query_started_vs_time.pdf"))
-plt.close()
-print("✅ Saved: jg_query_started_vs_time.pdf")
-
-# --- LaTeX summary table (combined) ---
-summary_df = pd.DataFrame(summary_rows)
-
-rows_tex = []
-for _, r in summary_df.iterrows():
-    row = " & ".join([
-        latex_escape(str(r["Config"])),
-        # fmt_minutes(r["AvgTimePerQueryMin"]),
-        fmt_ratio(r["QueriesPerIssue"]),
-        fmt_ratio(r["AvgPredicatesPerInvariant"]),
-        fmt_ratio(r["StdPredicatesPerInvariant"]),
-        #fmt_minutes(r["AvgInsightRunMin"]),
-        fmt_minutes(r["TotalRuntimeMin"]),
-        fmt_minutes_with_pct(r["TotalJGFinishedMin"], r["TotalRuntimeMin"]),
-        fmt_minutes_with_pct(r["TotalInsightFinishedMin"], r["TotalRuntimeMin"]),
-        r["IssuesText"],
-    ]) + r" \\"
-    rows_tex.append(row)
-
-table_tex = r"""
-\begin{table*}[t]
-\centering
-\caption{JasperGold query stats, average \Insight{} run time, discovered issues, and finished-time totals.}
-\label{tab:modelcheckstats}
-\renewcommand{\arraystretch}{1.05}
-\scriptsize
-\begin{tabularx}{\textwidth}{l c c c c c c X}
-\toprule
-    extbf{Config} & \textbf{\#Queries / issue} & \textbf{Avg \#pred/inv} & \textbf{Stddev \#pred/inv} & \textbf{Total runtime (min)} & \textbf{Total time JG (min)} & \textbf{Total time Insight (min)} & \textbf{Discovered issues} \\
-\midrule
-""" + "\n".join(rows_tex) + r"""
-\bottomrule
-\end{tabularx}
-\end{table*}
-""".strip()
-
-with open(os.path.join(OUTPUT_DIR, "summary_table.tex"), "w", encoding="utf-8") as fh:
-    fh.write(table_tex + "\n")
-
-print("✅ Saved: summary_table.tex")
+        print("ℹ️ No issues found to save (issue_detection_times.csv not created).")
+    
+    # --- Plot 2: jg_query_started (unchanged) ---
+    plt.figure()
+    color_cycle = itertools.cycle(base_colors)
+    
+    for f, color in zip(files, color_cycle):
+        df = pd.read_csv(f, sep=';')
+        df = normalize_time(df)
+        bex_weight, predicate_weight = extract_weights(os.path.basename(f))
+        label_prefix = (f"($\\lambda$={bex_weight}, $\\mu$={predicate_weight})"
+                        if predicate_weight is not None else
+                        os.path.basename(f))
+        end_time = float(df["NormTime"].max()) if "NormTime" in df and len(df) else 0.0
+    
+        jg = df[df["Event"].str.contains("jg_query_started", na=False)][["NormTime"]].copy()
+        if jg.empty:
+            jg_plot = pd.DataFrame({"NormTime": [0.0, end_time], "Count": [0, 0]})
+        else:
+            jg["Count"] = range(1, len(jg) + 1)
+            start_row = pd.DataFrame({"NormTime": [0.0], "Count": [0]})
+            jg_plot = pd.concat([start_row, jg], ignore_index=True)
+            if jg_plot["NormTime"].iloc[-1] < end_time:
+                jg_plot = pd.concat(
+                    [jg_plot, pd.DataFrame({"NormTime": [end_time], "Count": [jg_plot["Count"].iloc[-1]]})],
+                    ignore_index=True
+                )
+    
+        plt.plot(jg_plot["NormTime"], jg_plot["Count"],
+                 linestyle='-', color=color, alpha=0.9)
+        if jg_plot["Count"].max() > 0:
+            plt.scatter(jg_plot["NormTime"], jg_plot["Count"],
+                        color=color, marker='o', s=28, label=label_prefix)
+        else:
+            plt.scatter([], [], color=color, marker='o', s=28, label=label_prefix)
+    
+    plt.xlabel("Time (min)")
+    plt.ylabel("Cumulative Queries")
+    plt.title("Cumulative jg_query_started Events", pad=10)
+    plt.legend(frameon=False, ncol=1)
+    plt.grid(True, linestyle=':', linewidth=0.5, alpha=0.8)
+    plt.tight_layout(pad=0.5)
+    plt.savefig(os.path.join(OUTPUT_DIR, "jg_query_started_vs_time.pdf"))
+    plt.close()
+    print("✅ Saved: jg_query_started_vs_time.pdf")
+    
+    # --- LaTeX summary table (combined) ---
+    summary_df = pd.DataFrame(summary_rows)
+    
+    rows_tex = []
+    for _, r in summary_df.iterrows():
+        row = " & ".join([
+            latex_escape(str(r["Config"])),
+            # fmt_minutes(r["AvgTimePerQueryMin"]),
+            fmt_ratio(r["QueriesPerIssue"]),
+            fmt_ratio(r["AvgPredicatesPerInvariant"]),
+            fmt_ratio(r["StdPredicatesPerInvariant"]),
+            #fmt_minutes(r["AvgInsightRunMin"]),
+            fmt_minutes(r["TotalRuntimeMin"]),
+            fmt_minutes_with_pct(r["TotalJGFinishedMin"], r["TotalRuntimeMin"]),
+            fmt_minutes_with_pct(r["TotalInsightFinishedMin"], r["TotalRuntimeMin"]),
+            r["IssuesText"],
+        ]) + r" \\"
+        rows_tex.append(row)
+    
+    table_tex = r"""
+    \begin{table*}[t]
+    \centering
+    \caption{JasperGold query stats, average \Insight{} run time, discovered issues, and finished-time totals.}
+    \label{tab:modelcheckstats}
+    \renewcommand{\arraystretch}{1.05}
+    \scriptsize
+    \begin{tabularx}{\textwidth}{l c c c c c c X}
+    \toprule
+        extbf{Config} & \textbf{\#Queries / issue} & \textbf{Avg \#pred/inv} & \textbf{Stddev \#pred/inv} & \textbf{Total runtime (min)} & \textbf{Total time JG (min)} & \textbf{Total time Insight (min)} & \textbf{Discovered issues} \\
+    \midrule
+    """ + "\n".join(rows_tex) + r"""
+    \bottomrule
+    \end{tabularx}
+    \end{table*}
+    """.strip()
+    
+    with open(os.path.join(OUTPUT_DIR, "summary_table.tex"), "w", encoding="utf-8") as fh:
+        fh.write(table_tex + "\n")
+    
+    print("✅ Saved: summary_table.tex")

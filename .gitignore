@@ -23,3 +23,9 @@ result_plots/
 results/
 insight_output_old/
 gurobi.log
+example_cores/compare_to_boom_buggy/generated_files/correctness.tcl
+example_cores/compare_to_boom_buggy/generated_files/invariant.tcl
+obj_dir*/
+example_cores/compare_to_boom_buggy/generated_files/correctness.tcl
+correctness.tcl
+invariant.tcl
