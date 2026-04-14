@@ -1,7 +1,7 @@
 # INSIGHT
 
 This repository contains the source code for the paper:
-**[INSIGHT: Automatic Generation of Explanations for Efficient Identification of Hardware Bugs and Underspecifications]()**
+INSIGHT: Automatic Generation of Explanations for Efficient Identification of Hardware Bugs and Underspecifications
 by *Vincent Quentin Ulitzsch, Alessandro Bertani, Peter William Deutsch, David Langus Rodriguez, Kelly Xu, Aarti Gupta, Sharad Malik, and Mengjia Yan*.
 Appearing in *2026 IEEE Symposium on Security and Privacy (S&P)*.
 
