@@ -60,6 +60,19 @@ To reproduce the model checking results from our paper on the BOOM and Kronos co
 
   These scripts demonstrate the pipeline behavior with INSIGHT enabled (testing testing differing parameters) and disabled (`--no-insight`).
 
+### Reproducing deduplication results
+
+To reproduce both Kronos and BOOM deduplication results, run: 
+
+```
+reproduce/reproduce_deduplication_results.sh
+```
+
+You will get the output:
+```
+insight_output/<core>/deduplication/deduplication_*/plots
+```
+
 ## Porting to a New Core
 
 To run INSIGHT on a new RISC-V core:
