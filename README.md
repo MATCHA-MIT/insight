@@ -7,7 +7,7 @@ Appearing in *2026 IEEE Symposium on Security and Privacy (S&P)*.
 
 ## Project Structure
 
-This project has been restructured for open-source readability:
+This project is structured as follows.
 - `mutation_engine/`: The Rust-based RISC-V mutation engine used to generate variants.
 - `formula_finder/`: The Rust FFI engine for separator inference. (Formerly `invariant_finder_rust`)
 - `tools/verilator/`: Custom Verilator used for fast simulation.
