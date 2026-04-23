@@ -29,16 +29,30 @@ else
     echo "Kronos testcases already downloaded."
 fi
 
-# 3. Extract testcases
-echo "Extracting testcases..."
-unzip -o boom_testcase.zip -d boom_cexs
-unzip -o kronos_testcase.zip -d kronos_cexs
+# 3. Extract testcases (if not already extracted)
+if [ ! -d boom_cexs ]; then
+    echo "Extracting BOOM testcases..."
+    unzip -o boom_testcase.zip -d boom_cexs
+    # Remove stale classification and waveforms to force re-simulation
+    # These files from Zenodo reflect the 128B memory core, not the 1MB cascade core.
+    echo "Cleaning up stale BOOM classification data and waveforms..."
+    find boom_cexs -name "dedup-classification.json" -delete
+    find boom_cexs -name "*.vcd" -delete
+else
+    echo "BOOM testcases already extracted."
+fi
 
-# 4. Remove stale classification and waveforms to force re-simulation
-# These files from Zenodo reflect the 128B memory core, not the 1MB cascade core.
-echo "Cleaning up stale classification data and waveforms..."
-find boom_cexs kronos_cexs -name "dedup-classification.json" -delete
-find boom_cexs kronos_cexs -name "*.vcd" -delete
+if [ ! -d kronos_cexs ]; then
+    echo "Extracting Kronos testcases..."
+    unzip -o kronos_testcase.zip -d kronos_cexs
+
+else
+    echo "Kronos testcases already extracted."
+fi
+# Remove stale classification and waveforms to force re-simulation
+echo "Cleaning up stale Kronos classification data and waveforms..."
+find kronos_cexs -name "dedup-classification.json" -delete
+find kronos_cexs -name "*.vcd" -delete
 
 cd ..
 
@@ -60,17 +74,19 @@ cd formula_finder
 cargo build --release
 cd ..
 
-# 6. Run Deduplication and Metrics for BOOM
-echo "Running deduplication for BOOM..."
-#python3 orchestration/run_dedup_and_metrics.py \
-#    --config example_cores/configs/vincent_boom_cascade_pipeline_config.json \
-#    --cexs-dir results/boom_cexs/boom_cexs
-
 # 7. Run Deduplication and Metrics for Kronos
 echo "Running deduplication for Kronos..."
 python3 orchestration/run_dedup_and_metrics.py \
     --config example_cores/configs/vincent_kronos_cascade_config.json \
     --cexs-dir results/kronos_cexs/kronos_testcase
+
+
+
+# 6. Run Deduplication and Metrics for BOOM
+echo "Running deduplication for BOOM..."
+python3 orchestration/run_dedup_and_metrics.py \
+    --config example_cores/configs/vincent_boom_cascade_pipeline_config.json \
+    --cexs-dir results/boom_cexs/boom_cexs
 
 echo "===================================================="
 echo "Deduplication reproduction complete!"
