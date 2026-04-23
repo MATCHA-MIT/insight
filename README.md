@@ -1,13 +1,13 @@
 # INSIGHT
 
 This repository contains the source code for the paper:
-**[INSIGHT: Automatic Generation of Explanations for Efficient Identification of Hardware Bugs and Underspecifications](https://people.csail.mit.edu/mengjia/data/2026.SP.Insight.pdf)**
+INSIGHT: Automatic Generation of Explanations for Efficient Identification of Hardware Bugs and Underspecifications
 by *Vincent Quentin Ulitzsch, Alessandro Bertani, Peter William Deutsch, David Langus Rodriguez, Kelly Xu, Aarti Gupta, Sharad Malik, and Mengjia Yan*.
 Appearing in *2026 IEEE Symposium on Security and Privacy (S&P)*.
 
 ## Project Structure
 
-This project has been restructured for open-source readability:
+This project is structured as follows.
 - `mutation_engine/`: The Rust-based RISC-V mutation engine used to generate variants.
 - `formula_finder/`: The Rust FFI engine for separator inference. (Formerly `invariant_finder_rust`)
 - `tools/verilator/`: Custom Verilator used for fast simulation.
